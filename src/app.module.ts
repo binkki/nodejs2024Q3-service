@@ -6,7 +6,7 @@ import { UsersModule } from './users/users.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DatabaseModule } from './database/database.module';
+import { DatabaseService } from './database/database.service';
 
 @Module({
   imports: [
@@ -15,9 +15,8 @@ import { DatabaseModule } from './database/database.module';
     ArtistModule,
     AlbumModule,
     FavoritesModule,
-    DatabaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, DatabaseService],
 })
 export class AppModule {}

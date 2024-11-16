@@ -11,15 +11,14 @@ services:
     ports:
       - ${PORT}:${PORT}
     volumes:
-      - .:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./src:/usr/app/src
     depends_on:
       - db
     restart: always
   db:
     container_name: db
     build:
-      context: .
+      context: ./database
       dockerfile: Dockerfile-db
     image: postgres
     hostname: ${POSTGRES_HOST}
@@ -29,6 +28,8 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_HOST: ${POSTGRES_HOST}
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - postgress-logs:/var/log/postgresql

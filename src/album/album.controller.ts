@@ -29,14 +29,11 @@ export class AlbumController {
   @HttpCode(HttpStatus.OK)
   async getAlbumById(@Param('id') id: string) {
     validateId(id);
-    let album: Album;
-    this.albumService.getAlbumById(id).then(
-      (data: Album) => (album = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return album;
+    const getResult = await this.albumService.getAlbumById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    return getResult.album;
   }
 
   @Post()
@@ -57,27 +54,20 @@ export class AlbumController {
     if (!isValidAlbumDto(updateAlbumDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    let album: Album;
-    this.albumService.updateAlbum(id, updateAlbumDto).then(
-      (data: Album) => (album = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return album;
+    const updateResult = await this.albumService.updateAlbum(id, updateAlbumDto);
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    return updateResult.album;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteAlbum(@Param('id') id: string) {
     validateId(id);
-    this.albumService.deleteAlbum(id).then(
-      () => {
-        return;
-      },
-      (error: Error) => {
-        throw error;
-      },
-    );
+    const deleteResult = await this.albumService.deleteAlbum(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }

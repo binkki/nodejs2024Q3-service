@@ -12,63 +12,71 @@ export class TracksService {
     return await this.db.track.findMany();
   }
 
-  async getTrackById(id: string): Promise<Track | Error> {
+  async getTrackById(id: string):
+  Promise<{
+    track: Track,
+    error: Error | undefined,
+  }> {
     const track = await this.db.track.findUnique({
       where: { id },
     });
-    return new Promise((resolve, reject) => {
-      if (!track)
-        reject(new NotFoundException("Track with this id doesn't found"));
-      resolve(track);
-    });
+    return {
+      track,
+      error: !track ? new NotFoundException("Track with this id doesn't found") : undefined,
+    }
   }
 
   async addTrack(createTrackDto: CreateTrackDto): Promise<Track> {
-    const newTrack = await this.db.track.create({
+    return await this.db.track.create({
       data: {
         id: uuidv4(),
         ...createTrackDto,
       },
     });
-    return newTrack;
   }
 
   async updateTrack(
     id: string,
     createTrackDto: CreateTrackDto,
-  ): Promise<Track | Error> {
-    let track: Track;
-    let error: Error;
-    this.getTrackById(id).then(
-      (data: Track) => (track = data),
-      (getError: Error) => (error = getError),
-    );
-    if (error) {
-      return new Promise((reject) => reject(error));
+  ):
+  Promise<{
+    track: Track,
+    error: Error | undefined,
+  }> {
+    const getResult = await this.getTrackById(id);
+    if (getResult.error) {
+      return {
+        track: getResult.track,
+        error: getResult.error,
+      }
     }
     const updatedTrack = await this.db.track.update({
       where: { id },
-      data: {
-        ...track,
+      data: { 
+        ...getResult.track,
         ...createTrackDto,
       },
     });
-    return updatedTrack;
+    return {
+      track: updatedTrack,
+      error: undefined,      
+    };
   }
 
-  async deleteTrack(id: string) {
-    let error: Error;
-    await this.getTrackById(id).then(
-      () => {
-        return;
-      },
-      (getError) => (error = getError),
-    );
-    if (error !== undefined) {
-      return new Promise((reject) => reject(error));
+  async deleteTrack(id: string) : Promise<{
+    error: Error | undefined,
+  }>  {
+    const getResult = await this.getTrackById(id);
+    if (getResult.error) {
+      return {
+        error: getResult.error,
+      }
     }
     await this.db.track.delete({
       where: { id },
     });
+    return {
+      error: undefined,
+    }
   }
 }

@@ -12,63 +12,69 @@ export class AlbumService {
     return await this.db.album.findMany();
   }
 
-  async getAlbumById(id: string): Promise<Album | Error> {
-    const album = await this.db.album.findUnique({
-      where: { id },
-    });
-    return new Promise((resolve, reject) => {
-      if (!album)
-        reject(new NotFoundException("Album with this id doesn't found"));
-      resolve(album);
-    });
+  async getAlbumById(id: string):
+    Promise<{
+      album: Album,
+      error: Error | undefined,
+    }> {
+    const album = await this.db.album.findUnique({ where: { id } });
+    return {
+      album,
+      error: !album ? new NotFoundException("Album with this id doesn't found") : undefined,
+    }
   }
 
-  async addAlbum(createAlbumDto: CreateAlbumDto): Promise<Album> {
-    const newAlbum = await this.db.album.create({
+  async addAlbum(createAlbumDto: CreateAlbumDto) : Promise<Album> {
+    return await this.db.album.create({
       data: {
         id: uuidv4(),
         ...createAlbumDto,
       },
     });
-    return newAlbum;
   }
 
   async updateAlbum(
     id: string,
     updateAlbumDto: UpdateAlbumDto,
-  ): Promise<Album | Error> {
-    let album: Album;
-    let error: Error;
-    this.getAlbumById(id).then(
-      (data: Album) => (album = data),
-      (getError: Error) => (error = getError),
-    );
-    if (error) {
-      return new Promise((reject) => reject(error));
+  ):
+  Promise<{
+    album: Album,
+    error: Error | undefined,
+  }> {
+    const getResult = await this.getAlbumById(id);
+    if (getResult.error) {
+      return {
+        album: getResult.album,
+        error: getResult.error,
+      }
     }
     const updatedAlbum = await this.db.album.update({
       where: { id },
-      data: {
-        ...album,
+      data: { 
+        ...getResult.album,
         ...updateAlbumDto,
       },
     });
-    return updatedAlbum;
+    return {
+      album: updatedAlbum,
+      error: undefined,      
+    };
   }
 
-  async deleteAlbum(id: string): Promise<Error> {
-    let error: Error;
-    await this.getAlbumById(id).then(
-      () => {
-        return;
-      },
-      (getError) => (error = getError),
-    );
-    if (error !== undefined) {
-      return new Promise((reject) => reject(error));
+  async deleteAlbum(id: string) : Promise<{
+    error: Error | undefined,
+  }> {
+    const getResult = await this.getAlbumById(id);
+    if (getResult.error) {
+      return {
+        error: getResult.error,
+      }
     }
     await this.db.album.delete({
       where: { id },
     });
+    return {
+      error: undefined,
+    }
   }
 }

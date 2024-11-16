@@ -30,14 +30,12 @@ export class UsersController {
   @HttpCode(HttpStatus.OK)
   async getUserById(@Param('id') id: string): Promise<Omit<User, 'password'>> {
     validateId(id);
-    let user: User;
-    this.usersService.getUserById(id).then(
-      (data: User) => (user = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return user;
+    const getResult = await this.usersService.getUserById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    delete getResult.user["password"];
+    return getResult.user;
   }
 
   @Post()
@@ -48,8 +46,7 @@ export class UsersController {
     if (!isValidUserDto(createUserDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    const user = await this.usersService.addUser(createUserDto);
-    return user;
+    return await this.usersService.addUser(createUserDto);
   }
 
   @Put(':id')
@@ -61,27 +58,21 @@ export class UsersController {
     if (!isValidPasswordDto(updatePasswordDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    let user: User;
-    this.usersService.updatePassword(id, updatePasswordDto).then(
-      (data: User) => (user = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return user;
+    const updateResult = await this.usersService.updatePassword(id, updatePasswordDto);
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    delete updateResult.user["password"];
+    return updateResult.user;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string) {
     validateId(id);
-    this.usersService.deleteUser(id).then(
-      () => {
-        return;
-      },
-      (error: Error) => {
-        throw error;
-      },
-    );
+    const deleteResult = await this.usersService.deleteUser(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }

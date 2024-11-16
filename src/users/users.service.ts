@@ -33,26 +33,30 @@ export class UsersService {
     });
   }
 
-  async getUserById(id: string): Promise<Omit<User, 'password'>> {
+  async getUserById(id: string):
+    Promise<{
+      user: User,
+      error: Error | undefined,
+    }> {
     const user = await this.db.user.findUnique({
       where: { id },
       select: {
         id: true,
         login: true,
         version: true,
+        password: true,
         createdAt: true,
         updatedAt: true,
       },
     });
-    return new Promise((resolve, reject) => {
-      if (!user)
-        reject(new NotFoundException("User with this id doesn't found"));
-      resolve({
+    return {
+      user: user ? {
         ...user,
         createdAt: user.createdAt.getTime(),
         updatedAt: user.updatedAt.getTime(),
-      });
-    });
+      } : undefined,
+      error: !user ? new NotFoundException("User with this id doesn't found") : undefined,
+    }
   }
 
   async addUser(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
@@ -81,20 +85,17 @@ export class UsersService {
   async updatePassword(
     id: string,
     updatePasswordDto: UpdatePasswordDto,
-  ): Promise<Omit<User, 'password'>> {
-    let user: User;
-    let error: Error;
-    this.getUserById(id).then(
-      (data: User) => (user = data),
-      (getError: Error) => (error = getError),
-    );
-    if (!error && user.password !== updatePasswordDto.oldPassword) {
-      error = new ForbiddenException('Old password is incorrect');
+  ) : Promise<{
+    user: Omit<User, 'password'>,
+    error: Error | undefined,
+  }> {
+    const getResult = await this.getUserById(id);
+    if (getResult.error || (!getResult.error && getResult.user.password !== updatePasswordDto.oldPassword)) {
+      return {
+        user: getResult.user,
+        error: getResult.error,
+      }
     }
-    if (error) {
-      return new Promise((resolve, reject) => reject(error));
-    }
-
     const updatedUser = await this.db.user.update({
       where: { id },
       data: { password: updatePasswordDto.newPassword },
@@ -107,25 +108,30 @@ export class UsersService {
       },
     });
     return {
-      ...updatedUser,
-      createdAt: updatedUser.createdAt.getTime(),
-      updatedAt: updatedUser.updatedAt.getTime(),
+      user: {
+        ...updatedUser,
+        createdAt: updatedUser.createdAt.getTime(),
+        updatedAt: updatedUser.updatedAt.getTime(),
+      },
+      error: undefined,      
     };
   }
 
-  async deleteUser(id: string) {
+  async deleteUser(id: string) : Promise<{
+    error: Error | undefined,
+  }> {
     let error: Error;
-    await this.getUserById(id).then(
-      () => {
-        return;
-      },
-      (getError) => (error = getError),
-    );
-    if (error !== undefined) {
-      return new Promise((reject) => reject(error));
+    const getResult = await this.getUserById(id);
+    if (getResult.error) {
+      return {
+        error: getResult.error,
+      }
     }
     await this.db.user.delete({
       where: { id },
     });
+    return {
+      error: undefined,
+    }
   }
 }

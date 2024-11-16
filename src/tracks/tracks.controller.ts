@@ -28,14 +28,11 @@ export class TracksController {
   @Get(':id')
   async getTrackById(@Param('id') id: string): Promise<Track> {
     validateId(id);
-    let track: Track;
-    this.tracksService.getTrackById(id).then(
-      (data: Track) => (track = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return track;
+    const getResult = await this.tracksService.getTrackById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    return getResult.track;
   }
 
   @Post()
@@ -56,27 +53,20 @@ export class TracksController {
     if (!isValidTrackDto(createTrackDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    let track: Track;
-    this.tracksService.updateTrack(id, createTrackDto).then(
-      (data: Track) => (track = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return track;
+    const updateResult = await this.tracksService.updateTrack(id, createTrackDto);
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    return updateResult.track;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteTrack(@Param('id') id: string) {
     validateId(id);
-    this.tracksService.deleteTrack(id).then(
-      () => {
-        return;
-      },
-      (error: Error) => {
-        throw error;
-      },
-    );
+    const deleteResult = await this.tracksService.deleteTrack(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }

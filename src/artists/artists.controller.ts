@@ -29,14 +29,11 @@ export class ArtistController {
   @HttpCode(HttpStatus.OK)
   async getArtistById(@Param('id') id: string) {
     validateId(id);
-    let artist: Artist;
-    this.artistService.getArtistById(id).then(
-      (data: Artist) => (artist = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return artist;
+    const getResult = await this.artistService.getArtistById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    return getResult.artist;
   }
 
   @Post()
@@ -57,27 +54,20 @@ export class ArtistController {
     if (!isValidArtistDto(updateArtistDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    let artist: Artist;
-    this.artistService.updateArtist(id, updateArtistDto).then(
-      (data: Artist) => (artist = data),
-      (error: Error) => {
-        throw error;
-      },
-    );
-    return artist;
+    const updateResult = await this.artistService.updateArtist(id, updateArtistDto);
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    return updateResult.artist;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteArtist(@Param('id') id: string) {
     validateId(id);
-    this.artistService.deleteArtist(id).then(
-      () => {
-        return;
-      },
-      (error: Error) => {
-        throw error;
-      },
-    );
+    const deleteResult = await this.artistService.deleteArtist(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }
