@@ -7,6 +7,7 @@ import { FavoritesModule } from './favorites/favorites.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { db } from './db';
+import { DatabaseModule } from './database/database.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { db } from './db';
     ArtistModule,
     AlbumModule,
     FavoritesModule,
+    DatabaseModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: 'DB_CONNECTION', useValue: db }],
