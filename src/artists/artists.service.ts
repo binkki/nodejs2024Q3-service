@@ -1,81 +1,74 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { CreateArtistDto, UpdateArtistDto } from './dto/artist.dto';
-import { Album, Artist, Track } from 'src/types/types';
-import { validateId } from '../utils/utils';
+import { Artist } from 'src/types/types';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class ArtistService {
-  constructor(@Inject('DB_CONNECTION') private readonly db) {}
+  constructor(private db: DatabaseService) {}
 
-  getAllArtists() {
-    return this.db.artists;
+  async getAllArtists() {
+    return await this.db.artist.findMany();
   }
 
-  async getArtistIndexById(id: string): Promise<number> {
-    return await this.db.artists?.findIndex(
-      (artist: Artist) => artist?.id === id,
-    );
+  async getArtistById(id: string): Promise<Artist | Error> {
+    const artist = await this.db.artist.findUnique({
+      where: { id },
+    });
+    return new Promise((resolve, reject) => {
+      if (!artist)
+        reject(new NotFoundException("Artist with this id doesn't found"));
+      resolve(artist);
+    });
   }
 
-  async getArtistById(id: string) {
-    validateId(id);
-    const artistIndex = await this.getArtistIndexById(id);
-    if (artistIndex === -1) {
-      throw new NotFoundException('User not found');
-    }
-    return this.db.artists[artistIndex];
-  }
-
-  addArtist(createArtistDto: CreateArtistDto) {
-    const { name, grammy } = createArtistDto;
-    if (!name || typeof name !== 'string' || !name.length) {
-      throw new BadRequestException('Wrong createArtistDto');
-    }
-    if (!grammy || typeof grammy !== 'boolean') {
-      throw new BadRequestException('Wrong createArtistDto');
-    }
-    const newArtist = { id: uuidv4(), ...createArtistDto };
-    this.db.artists.push(newArtist);
+  async addArtist(createArtistDto: CreateArtistDto) {
+    const newArtist = await this.db.artist.create({
+      data: {
+        id: uuidv4(),
+        ...createArtistDto,
+      },
+    });
     return newArtist;
   }
 
   async updateArtist(
     id: string,
     updateArtistDto: UpdateArtistDto,
-  ): Promise<Artist> {
-    const artist = await this.getArtistById(id);
-    const { name } = updateArtistDto;
-    if (!name || (name !== undefined && typeof name !== 'string')) {
-      throw new BadRequestException('Wrong updateArtistDto');
+  ): Promise<Artist | Error> {
+    let artist: Artist;
+    let error: Error;
+    this.getArtistById(id).then(
+      (data: Artist) => (artist = data),
+      (getError: Error) => (error = getError),
+    );
+    if (error) {
+      return new Promise((reject) => reject(error));
     }
-    const artistIndex = await this.getArtistIndexById(artist.id);
-    this.db.artists[artistIndex] = {
-      id: artist.id,
-      name:
-        updateArtistDto.name !== undefined ? updateArtistDto.name : artist.name,
-      grammy:
-        updateArtistDto.grammy !== undefined
-          ? updateArtistDto.grammy
-          : artist.grammy,
-    };
-    return this.db.artists[artistIndex];
+    const updatedArtist = await this.db.artist.update({
+      where: { id },
+      data: {
+        ...artist,
+        ...updateArtistDto,
+      },
+    });
+    return updatedArtist;
   }
 
   async deleteArtist(id: string) {
-    const artist = await this.getArtistById(id);
-    const artistIndex = await this.getArtistIndexById(artist.id);
-    this.db.artists.splice(artistIndex, 1);
-    this.db.albums.forEach((album: Album) => {
-      if (album.artistId === id) album.artistId = null;
-    });
-    this.db.tracks.forEach((track: Track) => {
-      if (track.artistId === id) track.artistId = null;
+    let error: Error;
+    await this.getArtistById(id).then(
+      () => {
+        return;
+      },
+      (getError) => (error = getError),
+    );
+    if (error !== undefined) {
+      return new Promise((reject) => reject(error));
+    }
+    await this.db.artist.delete({
+      where: { id },
     });
   }
 }

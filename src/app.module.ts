@@ -6,7 +6,6 @@ import { UsersModule } from './users/users.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { db } from './db';
 import { DatabaseModule } from './database/database.module';
 
 @Module({
@@ -19,6 +18,6 @@ import { DatabaseModule } from './database/database.module';
     DatabaseModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: 'DB_CONNECTION', useValue: db }],
+  providers: [AppService],
 })
 export class AppModule {}

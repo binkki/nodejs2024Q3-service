@@ -39,11 +39,3 @@ export interface FavoritesResponse {
   albums: Album[];
   tracks: Track[];
 }
-
-export interface DB {
-  albums: Album[];
-  artists: Artist[];
-  tracks: Track[];
-  users: User[];
-  favorites: Favorites;
-}

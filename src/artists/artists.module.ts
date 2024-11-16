@@ -1,16 +1,11 @@
 import { Module } from '@nestjs/common';
 import { ArtistController } from './artists.controller';
 import { ArtistService } from './artists.service';
-import { db } from '../db';
+import { DatabaseModule } from '../database/database.module';
 
 @Module({
+  imports: [DatabaseModule],
   controllers: [ArtistController],
-  providers: [
-    ArtistService,
-    {
-      provide: 'DB_CONNECTION',
-      useValue: db,
-    },
-  ],
+  providers: [ArtistService],
 })
 export class ArtistModule {}
