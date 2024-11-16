@@ -4,24 +4,139 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common';
 import { Album, Artist, FavoritesResponse, Track } from 'src/types/types';
-import { validateId } from '../utils/utils';
 import { DatabaseService } from '../database/database.service';
+import { TracksService } from 'src/tracks/tracks.service';
+import { AlbumService } from 'src/album/album.service';
+import { ArtistService } from 'src/artists/artists.service';
+import { getFavoriteArray } from 'src/utils/utils';
+
 
 @Injectable()
 export class FavoritesService {
-  constructor(private db: DatabaseService) {}
+  constructor(
+    private db: DatabaseService,
+    private trackService: TracksService,
+    private albumService: AlbumService,
+    private artistService: ArtistService,
+  ) {}
 
-  async getAllFavorites() {}
+  async getAllFavorites() {
+    const favorites = await this.getFavoriteObject();    
+    const allAlbums = await this.albumService.getAllAlbums();
+    const allTracks = await this.trackService.getAllTracks();
+    const allArtists = await this.artistService.getAllArtists();
 
-  async addTrackToFavorites(trackId: string) {}
+    return {
+      albums: getFavoriteArray(favorites?.albums, allAlbums),
+      artists: getFavoriteArray(favorites?.artists, allArtists),
+      tracks: getFavoriteArray(favorites?.tracks, allTracks),
+    };
+  }
 
-  async deleteTrackFromFavorites(trackId: string) {}
+  async getFavoriteObject() {
+    return await this.db.favorites.findFirst({
+      select: {
+        id: true,
+        albums: true,
+        artists: true,
+        tracks: true,
+      },
+    });
+  }
 
-  async addAlbumToFavorites(albumId: string) {}
+  async addTrackToFavorites(trackId: string) : Promise<Error> {
+    const getResult = await this.trackService.getTrackById(trackId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Track doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        tracks: {
+          set: [ ...favorites.tracks, trackId ],
+        },
+      },
+    });
+  }
 
-  async deleteAlbumFromFavorites(albumId: string) {}
+  async deleteTrackFromFavorites(trackId: string) : Promise<Error> {
+    const getResult = await this.trackService.getTrackById(trackId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Track doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        tracks: {
+          set: favorites.tracks.filter((track) => track !== trackId),
+        },
+      },
+    }); 
+  }
 
-  async addArtistToFavorites(artistId: string) {}
+  async addAlbumToFavorites(albumId: string) : Promise<Error> {
+    const getResult = await this.albumService.getAlbumById(albumId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Album doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();    
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        albums: {
+          set: [ ...favorites.albums, albumId ],
+        },
+      },
+    });  
+  }
 
-  async deleteArtistFromFavorites(artistId: string) {}
+  async deleteAlbumFromFavorites(albumId: string) : Promise<Error> {
+    const getResult = await this.albumService.getAlbumById(albumId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Album doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        albums: {
+          set: favorites.albums.filter((album) => album !== albumId),
+        },
+      },
+    }); 
+  }
+
+  async addArtistToFavorites(artistId: string) : Promise<Error> {
+    const getResult = await this.artistService.getArtistById(artistId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Artist doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();    
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        artists: {
+          set: [ ...favorites.artists, artistId ],
+        },
+      },
+    });   
+  }
+
+  async deleteArtistFromFavorites(artistId: string) : Promise<Error> {
+    const getResult = await this.artistService.getArtistById(artistId);
+    if (getResult.error) {
+      return new UnprocessableEntityException("Artist doesn't exist");
+    }
+    const favorites = await this.getFavoriteObject();
+    await this.db.favorites.update({
+      where: { id: favorites.id },
+      data: {
+        artists: {
+          set: favorites.artists.filter((artist) => artist !== artistId),
+        },
+      },
+    });
+  }
 }
