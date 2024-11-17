@@ -39,7 +39,7 @@ export class ArtistController {
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async addArtist(@Body() createArtistDto: CreateArtistDto) {
-    if (!isValidArtistDto(createArtistDto)) {
+    if (!isValidArtistDto(createArtistDto, true)) {
       throw new BadRequestException('Wrong dto');
     }
     return await this.artistService.addArtist(createArtistDto);
@@ -51,7 +51,7 @@ export class ArtistController {
     @Body() updateArtistDto: UpdateArtistDto,
   ) {
     validateId(id);
-    if (!isValidArtistDto(updateArtistDto)) {
+    if (!isValidArtistDto(updateArtistDto, false)) {
       throw new BadRequestException('Wrong dto');
     }
     const updateResult = await this.artistService.updateArtist(id, updateArtistDto);

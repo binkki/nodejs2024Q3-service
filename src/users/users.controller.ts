@@ -62,7 +62,6 @@ export class UsersController {
     if (updateResult.error) {
       throw updateResult.error;
     }
-    delete updateResult.user["password"];
     return updateResult.user;
   }
 

@@ -90,15 +90,25 @@ export class UsersService {
     error: Error | undefined,
   }> {
     const getResult = await this.getUserById(id);
-    if (getResult.error || (!getResult.error && getResult.user.password !== updatePasswordDto.oldPassword)) {
+    if (getResult.error) {
       return {
         user: getResult.user,
         error: getResult.error,
       }
     }
+    if ((!getResult.error && getResult.user.password !== updatePasswordDto.oldPassword)) {
+      return {
+        user: getResult.user,
+        error: new ForbiddenException('Old password is incorrect'),
+      }
+    }
     const updatedUser = await this.db.user.update({
       where: { id },
-      data: { password: updatePasswordDto.newPassword },
+      data: { 
+        password: updatePasswordDto.newPassword,
+        version: getResult.user.version + 1,
+        createdAt: new Date(Date.now()).toISOString(),
+      },
       select: {
         id: true,
         login: true,

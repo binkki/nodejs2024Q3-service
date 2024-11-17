@@ -27,7 +27,14 @@ export const isValidAlbumDto = (
 
 export const isValidArtistDto = (
   dto: CreateArtistDto | UpdateArtistDto,
-): boolean => !(!dto.name || typeof dto.name !== 'string' || !dto.name.length);
+  isCreate: boolean,
+): boolean => {
+  const isNameValid = !(!dto.name || typeof dto.name !== 'string' || !dto.name.length);
+  if (!isNameValid)
+    return false;
+  const isGrammyValid = !(!dto.grammy || typeof dto.grammy !== 'boolean');
+  return isCreate ? isGrammyValid : true;
+}
 
 export const isValidTrackDto = (dto: CreateTrackDto): boolean =>
   !(
