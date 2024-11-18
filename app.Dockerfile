@@ -12,6 +12,7 @@ COPY --from=build /app/dist /app/dist
 COPY --from=build /app/prisma /app/prisma
 COPY --from=build /app/doc /app/doc
 RUN npm ci --omit=dev && \
-npm cache clean --force
-EXPOSE 4000
+npm cache clean --force && \
+rm -rf /root/.cache
+EXPOSE ${PORT}
 CMD [  "node", "dist/src/main" ]

@@ -19,7 +19,7 @@ Copy `.env.example` file and then rename it to `.env`.
 ## Running application
 
 ```
-docker-compose up -d --build 
+npm run docker:start
 ```
 
 ## Testing
