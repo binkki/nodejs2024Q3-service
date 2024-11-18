@@ -1,145 +1,137 @@
-import { Injectable, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
-import { TracksService } from 'src/tracks/tracks.service';
-import { AlbumService } from 'src/album/album.service';
-import { ArtistService } from 'src/artists/artists.service';
-import { getFavoriteArray } from 'src/utils/utils';
+import { FavoritesResponse, FavoriteType } from 'src/types/types';
 
 @Injectable()
 export class FavoritesService {
-  constructor(
-    private db: DatabaseService,
-    private trackService: TracksService,
-    private albumService: AlbumService,
-    private artistService: ArtistService,
-  ) {}
+  constructor(private db: DatabaseService) {}
 
   async getAllFavorites() {
-    const favorites = await this.getFavoriteObject();
-    const allAlbums = await this.albumService.getAllAlbums();
-    const allTracks = await this.trackService.getAllTracks();
-    const allArtists = await this.artistService.getAllArtists();
+    const [tracks, artists, albums] = await Promise.all([
+      this.getFavorites('track'),
+      this.getFavorites('artist'),
+      this.getFavorites('album'),
+    ]);
 
-    return {
-      albums: getFavoriteArray(favorites?.albums, allAlbums),
-      artists: getFavoriteArray(favorites?.artists, allArtists),
-      tracks: getFavoriteArray(favorites?.tracks, allTracks),
-    };
+    return { tracks, artists, albums };
   }
 
-  async getFavoriteObject() {
-    return await this.db.favorites.findFirst({
-      select: {
-        id: true,
-        albums: true,
-        artists: true,
-        tracks: true,
-      },
-    });
-  }
+  private async getFavorites(favoriteType: FavoriteType) {
+    switch (favoriteType) {
+      case 'track':
+        return (
+          await this.db.favoriteTrack.findMany({
+            include: { track: true },
+          })
+        ).map((v) => v.track);
 
-  async addTrackToFavorites(trackId: string): Promise<Error> {
-    const getResult = await this.trackService.getTrackById(trackId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Track doesn't exist");
-    }
-    const favorites = await this.getFavoriteObject();
-    const isAlreadyInFav = favorites.artists.indexOf(trackId);
-    if (isAlreadyInFav === -1) {
-      await this.db.favorites.update({
-        where: { id: favorites.id },
-        data: {
-          tracks: {
-            set: [...favorites.tracks, trackId],
-          },
-        },
-      });
+      case 'artist':
+        return (
+          await this.db.favoriteArtist.findMany({
+            include: { artist: true },
+          })
+        ).map((v) => v.artist);
+
+      case 'album':
+        return (
+          await this.db.favoriteAlbum.findMany({
+            include: { album: true },
+          })
+        ).map((v) => v.album);
+
+      default:
+        return [];
     }
   }
 
-  async deleteTrackFromFavorites(trackId: string): Promise<Error> {
-    const getResult = await this.trackService.getTrackById(trackId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Track doesn't exist");
-    }
-    const favorites = await this.getFavoriteObject();
-    await this.db.favorites.update({
-      where: { id: favorites.id },
-      data: {
-        tracks: {
-          set: [...favorites.tracks.filter((track) => track !== trackId)],
-        },
-      },
-    });
+  async doesItemExist(id: string, favoriteType: FavoriteType) {
+    return Boolean(await this.findItemById(id, favoriteType));
   }
 
-  async addAlbumToFavorites(albumId: string): Promise<Error> {
-    const getResult = await this.albumService.getAlbumById(albumId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Album doesn't exist");
-    }
-    const favorites = await this.getFavoriteObject();
-    const isAlreadyInFav = favorites.artists.indexOf(albumId);
-    if (isAlreadyInFav === -1) {
-      await this.db.favorites.update({
-        where: { id: favorites.id },
-        data: {
-          albums: {
-            set: [...favorites.albums, albumId],
-          },
-        },
-      });
+  private async findItemById(id: string, favoriteType: FavoriteType) {
+    switch (favoriteType) {
+      case 'artist':
+        return this.db.artist.findUnique({ where: { id } });
+      case 'album':
+        return this.db.album.findUnique({ where: { id } });
+      case 'track':
+        return this.db.track.findUnique({ where: { id } });
+      default:
+        return null;
     }
   }
 
-  async deleteAlbumFromFavorites(albumId: string): Promise<Error> {
-    const getResult = await this.albumService.getAlbumById(albumId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Album doesn't exist");
-    }
-    const favorites = await this.getFavoriteObject();
-    await this.db.favorites.update({
-      where: { id: favorites.id },
-      data: {
-        albums: {
-          set: [...favorites.albums.filter((album) => album !== albumId)],
-        },
-      },
-    });
-  }
-
-  async addArtistToFavorites(artistId: string): Promise<Error> {
-    const getResult = await this.artistService.getArtistById(artistId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Artist doesn't exist");
-    }
-    const favorites = await this.getFavoriteObject();
-    const isAlreadyInFav = favorites.artists.indexOf(artistId);
-    if (isAlreadyInFav === -1) {
-      await this.db.favorites.update({
-        where: { id: favorites.id },
-        data: {
-          artists: {
-            set: [...favorites.artists, artistId],
-          },
-        },
-      });
+  async isItemInFavorites(id: string, favoriteType: FavoriteType) {
+    switch (favoriteType) {
+      case 'artist':
+        return this.db.favoriteArtist.findUnique({
+          where: { artistId: id },
+        });
+      case 'album':
+        return this.db.favoriteAlbum.findUnique({
+          where: { albumId: id },
+        });
+      case 'track':
+        return this.db.favoriteTrack.findUnique({
+          where: { trackId: id },
+        });
+      default:
+        return null;
     }
   }
 
-  async deleteArtistFromFavorites(artistId: string): Promise<Error> {
-    const getResult = await this.artistService.getArtistById(artistId);
-    if (getResult.error) {
-      return new UnprocessableEntityException("Artist doesn't exist");
+  async addFavorite(id: string, favoriteType: FavoriteType) {
+    const existingFavorite = await this.isItemInFavorites(id, favoriteType);
+    if (existingFavorite) return existingFavorite;
+
+    return this.addToFavorites(id, favoriteType);
+  }
+
+  private async addToFavorites(id: string, favoriteType: FavoriteType) {
+    switch (favoriteType) {
+      case 'artist':
+        return this.db.favoriteArtist.create({
+          data: { artistId: id },
+        });
+      case 'album':
+        return this.db.favoriteAlbum.create({
+          data: { albumId: id },
+        });
+      case 'track':
+        return this.db.favoriteTrack.create({
+          data: { trackId: id },
+        });
+      default:
+        throw new Error(`Unsupported favorite type: ${favoriteType}`);
     }
-    const favorites = await this.getFavoriteObject();
-    await this.db.favorites.update({
-      where: { id: favorites.id },
-      data: {
-        artists: {
-          set: [...favorites.artists.filter((artist) => artist !== artistId)],
-        },
-      },
-    });
+  }
+
+  async removeFavorite(id: string, favoriteType: FavoriteType) {
+    const deleteMethod = this.getDeleteMethod(favoriteType);
+    if (!deleteMethod)
+      throw new Error(`Unsupported favorite type: ${favoriteType}`);
+
+    await deleteMethod(id);
+  }
+
+  private getDeleteMethod(favoriteType: FavoriteType) {
+    switch (favoriteType) {
+      case 'artist':
+        return (id: string) =>
+          this.db.favoriteArtist.delete({ where: { artistId: id } });
+      case 'album':
+        return (id: string) =>
+          this.db.favoriteAlbum.delete({ where: { albumId: id } });
+      case 'track':
+        return (id: string) =>
+          this.db.favoriteTrack.delete({ where: { trackId: id } });
+      default:
+        return null;
+    }
   }
 }

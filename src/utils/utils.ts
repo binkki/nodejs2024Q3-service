@@ -66,13 +66,3 @@ export const isValidPasswordDto = (dto: UpdatePasswordDto): boolean =>
     typeof dto.oldPassword !== 'string' ||
     !dto.oldPassword.length
   );
-
-export const getFavoriteArray = <T extends { id?: string }>(
-  favData: string[],
-  allData: T[],
-): T[] => {
-  if (!favData) return [];
-  return favData
-    .map((id: string) => allData.find((el: T) => el.id === id))
-    .filter((e) => e != null);
-};
