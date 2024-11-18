@@ -1,80 +1,82 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
-import { DB, Track } from '../types/types';
+import { Track } from '../types/types';
 import { CreateTrackDto } from './dto/create-track.dto';
-import { validateId } from 'src/utils/utils';
+import { DatabaseService } from 'src/database/database.service';
 
 @Injectable()
 export class TracksService {
-  constructor(@Inject('DB_CONNECTION') private readonly db: DB) {}
+  constructor(private db: DatabaseService) {}
 
   async getAllTracks(): Promise<Track[]> {
-    return await this.db.tracks;
+    return await this.db.track.findMany();
   }
 
-  async getTrackIndexById(id: string): Promise<number> {
-    return await this.db.tracks?.findIndex((track: Track) => track?.id === id);
-  }
-
-  async getTrackById(id: string): Promise<Track> {
-    validateId(id);
-    const trackIndex = await this.getTrackIndexById(id);
-    if (trackIndex === -1) {
-      throw new NotFoundException('Track not found');
-    }
-    return this.db.tracks[trackIndex];
+  async getTrackById(id: string): Promise<{
+    track: Track;
+    error: Error | undefined;
+  }> {
+    const track = await this.db.track.findUnique({
+      where: { id },
+    });
+    return {
+      track,
+      error: !track
+        ? new NotFoundException("Track with this id doesn't found")
+        : undefined,
+    };
   }
 
   async addTrack(createTrackDto: CreateTrackDto): Promise<Track> {
-    const { name, duration, artistId, albumId } = createTrackDto;
-    if (!name || typeof name !== 'string' || !name.length) {
-      throw new BadRequestException('Wrong createTrackDto');
-    }
-    if (!duration || typeof duration !== 'number') {
-      throw new BadRequestException('Wrong createTrackDto');
-    }
-    const track: Track = {
-      id: uuidv4(),
-      name,
-      artistId,
-      albumId,
-      duration,
-    };
-    this.db.tracks.push(track);
-    return track;
+    return await this.db.track.create({
+      data: {
+        id: uuidv4(),
+        ...createTrackDto,
+      },
+    });
   }
 
   async updateTrack(
     id: string,
     createTrackDto: CreateTrackDto,
-  ): Promise<Track> {
-    const { name, duration, artistId, albumId } = createTrackDto;
-    if (!name || typeof name !== 'string' || !name.length) {
-      throw new BadRequestException('Wrong createTrackDto');
+  ): Promise<{
+    track: Track;
+    error: Error | undefined;
+  }> {
+    const getResult = await this.getTrackById(id);
+    if (getResult.error) {
+      return {
+        track: getResult.track,
+        error: getResult.error,
+      };
     }
-    if (!duration || typeof duration !== 'number') {
-      throw new BadRequestException('Wrong createTrackDto');
-    }
-    const track = await this.getTrackById(id);
-    const trackIndex = await this.getTrackIndexById(track.id);
-    this.db.tracks[trackIndex] = {
-      ...this.db.tracks[trackIndex],
-      name,
-      artistId,
-      albumId,
-      duration,
+    const updatedTrack = await this.db.track.update({
+      where: { id },
+      data: {
+        ...getResult.track,
+        ...createTrackDto,
+      },
+    });
+    return {
+      track: updatedTrack,
+      error: undefined,
     };
-    return this.db.tracks[trackIndex];
   }
 
-  async deleteTrack(trackId: string) {
-    const track = await this.getTrackById(trackId);
-    const trackIndex = await this.getTrackIndexById(track.id);
-    this.db.tracks.splice(trackIndex, 1);
+  async deleteTrack(id: string): Promise<{
+    error: Error | undefined;
+  }> {
+    const getResult = await this.getTrackById(id);
+    if (getResult.error) {
+      return {
+        error: getResult.error,
+      };
+    }
+    await this.db.track.delete({
+      where: { id },
+    });
+    return {
+      error: undefined,
+    };
   }
 }
