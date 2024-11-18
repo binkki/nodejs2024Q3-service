@@ -33,11 +33,10 @@ export class UsersService {
     });
   }
 
-  async getUserById(id: string):
-    Promise<{
-      user: User,
-      error: Error | undefined,
-    }> {
+  async getUserById(id: string): Promise<{
+    user: User;
+    error: Error | undefined;
+  }> {
     const user = await this.db.user.findUnique({
       where: { id },
       select: {
@@ -50,13 +49,17 @@ export class UsersService {
       },
     });
     return {
-      user: user ? {
-        ...user,
-        createdAt: user.createdAt.getTime(),
-        updatedAt: user.updatedAt.getTime(),
-      } : undefined,
-      error: !user ? new NotFoundException("User with this id doesn't found") : undefined,
-    }
+      user: user
+        ? {
+            ...user,
+            createdAt: user.createdAt.getTime(),
+            updatedAt: user.updatedAt.getTime(),
+          }
+        : undefined,
+      error: !user
+        ? new NotFoundException("User with this id doesn't found")
+        : undefined,
+    };
   }
 
   async addUser(createUserDto: CreateUserDto): Promise<Omit<User, 'password'>> {
@@ -85,26 +88,29 @@ export class UsersService {
   async updatePassword(
     id: string,
     updatePasswordDto: UpdatePasswordDto,
-  ) : Promise<{
-    user: Omit<User, 'password'>,
-    error: Error | undefined,
+  ): Promise<{
+    user: Omit<User, 'password'>;
+    error: Error | undefined;
   }> {
     const getResult = await this.getUserById(id);
     if (getResult.error) {
       return {
         user: getResult.user,
         error: getResult.error,
-      }
+      };
     }
-    if ((!getResult.error && getResult.user.password !== updatePasswordDto.oldPassword)) {
+    if (
+      !getResult.error &&
+      getResult.user.password !== updatePasswordDto.oldPassword
+    ) {
       return {
         user: getResult.user,
         error: new ForbiddenException('Old password is incorrect'),
-      }
+      };
     }
     const updatedUser = await this.db.user.update({
       where: { id },
-      data: { 
+      data: {
         password: updatePasswordDto.newPassword,
         version: getResult.user.version + 1,
         createdAt: new Date(Date.now()).toISOString(),
@@ -123,25 +129,24 @@ export class UsersService {
         createdAt: updatedUser.createdAt.getTime(),
         updatedAt: updatedUser.updatedAt.getTime(),
       },
-      error: undefined,      
+      error: undefined,
     };
   }
 
-  async deleteUser(id: string) : Promise<{
-    error: Error | undefined,
+  async deleteUser(id: string): Promise<{
+    error: Error | undefined;
   }> {
-    let error: Error;
     const getResult = await this.getUserById(id);
     if (getResult.error) {
       return {
         error: getResult.error,
-      }
+      };
     }
     await this.db.user.delete({
       where: { id },
     });
     return {
       error: undefined,
-    }
+    };
   }
 }

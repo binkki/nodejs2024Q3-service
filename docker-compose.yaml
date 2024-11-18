@@ -12,7 +12,14 @@ services:
       - ${PORT}:${PORT}
     depends_on:
       - db
+    networks:
+      - hls
     restart: always
+    develop:
+      watch:
+        - action: rebuild
+          path: ./src
+          target: /app/src
   seeder:
     container_name: seeder
     build:
@@ -20,6 +27,8 @@ services:
       dockerfile: seeder.Dockerfile
     env_file:
       .env
+    networks:
+      - hls
     depends_on:
       - db
     restart: on-failure
@@ -29,7 +38,7 @@ services:
       context: .
       dockerfile: db.Dockerfile
     image: postgres:16.2-alpine
-    hostname: ${POSTGRES_HOST}
+    hostname: ${POSTGRES_HOST_DOCKER}
     ports:
       - ${POSTGRES_PORT}:${POSTGRES_PORT}
     environment:
@@ -41,6 +50,9 @@ services:
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - postgress-logs:/var/log/postgresql
+    command: ["postgres", "-c", "logging_collector=on", "-c", "log_directory=/var/log/postgresql", "-c", "log_filename=postgresql.log", "-c", "log_statement=all"]
+    networks:
+      - hls
     restart: always
 
 volumes:
@@ -48,5 +60,5 @@ volumes:
   postgress-logs:
 
 networks:
-  default:
+  hls:
     driver: bridge

@@ -13,7 +13,6 @@ import {
 import { AlbumService } from './album.service';
 import { CreateAlbumDto, UpdateAlbumDto } from './dto/album.dto';
 import { isValidAlbumDto, validateId } from '../utils/utils';
-import { Album } from 'src/types/types';
 
 @Controller('album')
 export class AlbumController {
@@ -54,7 +53,10 @@ export class AlbumController {
     if (!isValidAlbumDto(updateAlbumDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    const updateResult = await this.albumService.updateAlbum(id, updateAlbumDto);
+    const updateResult = await this.albumService.updateAlbum(
+      id,
+      updateAlbumDto,
+    );
     if (updateResult.error) {
       throw updateResult.error;
     }

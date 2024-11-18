@@ -13,7 +13,6 @@ import {
 import { ArtistService } from './artists.service';
 import { CreateArtistDto, UpdateArtistDto } from './dto/artist.dto';
 import { isValidArtistDto, validateId } from 'src/utils/utils';
-import { Artist } from 'src/types/types';
 
 @Controller('artist')
 export class ArtistController {
@@ -54,7 +53,10 @@ export class ArtistController {
     if (!isValidArtistDto(updateArtistDto, false)) {
       throw new BadRequestException('Wrong dto');
     }
-    const updateResult = await this.artistService.updateArtist(id, updateArtistDto);
+    const updateResult = await this.artistService.updateArtist(
+      id,
+      updateArtistDto,
+    );
     if (updateResult.error) {
       throw updateResult.error;
     }

@@ -12,18 +12,19 @@ export class TracksService {
     return await this.db.track.findMany();
   }
 
-  async getTrackById(id: string):
-  Promise<{
-    track: Track,
-    error: Error | undefined,
+  async getTrackById(id: string): Promise<{
+    track: Track;
+    error: Error | undefined;
   }> {
     const track = await this.db.track.findUnique({
       where: { id },
     });
     return {
       track,
-      error: !track ? new NotFoundException("Track with this id doesn't found") : undefined,
-    }
+      error: !track
+        ? new NotFoundException("Track with this id doesn't found")
+        : undefined,
+    };
   }
 
   async addTrack(createTrackDto: CreateTrackDto): Promise<Track> {
@@ -38,45 +39,44 @@ export class TracksService {
   async updateTrack(
     id: string,
     createTrackDto: CreateTrackDto,
-  ):
-  Promise<{
-    track: Track,
-    error: Error | undefined,
+  ): Promise<{
+    track: Track;
+    error: Error | undefined;
   }> {
     const getResult = await this.getTrackById(id);
     if (getResult.error) {
       return {
         track: getResult.track,
         error: getResult.error,
-      }
+      };
     }
     const updatedTrack = await this.db.track.update({
       where: { id },
-      data: { 
+      data: {
         ...getResult.track,
         ...createTrackDto,
       },
     });
     return {
       track: updatedTrack,
-      error: undefined,      
+      error: undefined,
     };
   }
 
-  async deleteTrack(id: string) : Promise<{
-    error: Error | undefined,
-  }>  {
+  async deleteTrack(id: string): Promise<{
+    error: Error | undefined;
+  }> {
     const getResult = await this.getTrackById(id);
     if (getResult.error) {
       return {
         error: getResult.error,
-      }
+      };
     }
     await this.db.track.delete({
       where: { id },
     });
     return {
       error: undefined,
-    }
+    };
   }
 }

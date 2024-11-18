@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import { isUUID } from 'class-validator';
-import { User } from 'src/types/types';
 import { CreateAlbumDto, UpdateAlbumDto } from 'src/album/dto/album.dto';
 import { CreateArtistDto, UpdateArtistDto } from 'src/artists/dto/artist.dto';
 import { CreateTrackDto } from 'src/tracks/dto/create-track.dto';
@@ -29,12 +28,15 @@ export const isValidArtistDto = (
   dto: CreateArtistDto | UpdateArtistDto,
   isCreate: boolean,
 ): boolean => {
-  const isNameValid = !(!dto.name || typeof dto.name !== 'string' || !dto.name.length);
-  if (!isNameValid)
-    return false;
+  const isNameValid = !(
+    !dto.name ||
+    typeof dto.name !== 'string' ||
+    !dto.name.length
+  );
+  if (!isNameValid) return false;
   const isGrammyValid = !(!dto.grammy || typeof dto.grammy !== 'boolean');
   return isCreate ? isGrammyValid : true;
-}
+};
 
 export const isValidTrackDto = (dto: CreateTrackDto): boolean =>
   !(
@@ -65,8 +67,12 @@ export const isValidPasswordDto = (dto: UpdatePasswordDto): boolean =>
     !dto.oldPassword.length
   );
 
-export const getFavoriteArray = <T extends { id?: string }>(favData: string[], allData: T[]) : T[] => {
-  if (!favData)
-    return [];
-  return favData.map((id: String) => allData.find((el: T) => el.id === id)).filter((e) => e != null);
-}
+export const getFavoriteArray = <T extends { id?: string }>(
+  favData: string[],
+  allData: T[],
+): T[] => {
+  if (!favData) return [];
+  return favData
+    .map((id: string) => allData.find((el: T) => el.id === id))
+    .filter((e) => e != null);
+};

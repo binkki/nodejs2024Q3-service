@@ -12,19 +12,20 @@ export class AlbumService {
     return await this.db.album.findMany();
   }
 
-  async getAlbumById(id: string):
-    Promise<{
-      album: Album,
-      error: Error | undefined,
-    }> {
+  async getAlbumById(id: string): Promise<{
+    album: Album;
+    error: Error | undefined;
+  }> {
     const album = await this.db.album.findUnique({ where: { id } });
     return {
       album,
-      error: !album ? new NotFoundException("Album with this id doesn't found") : undefined,
-    }
+      error: !album
+        ? new NotFoundException("Album with this id doesn't found")
+        : undefined,
+    };
   }
 
-  async addAlbum(createAlbumDto: CreateAlbumDto) : Promise<Album> {
+  async addAlbum(createAlbumDto: CreateAlbumDto): Promise<Album> {
     return await this.db.album.create({
       data: {
         id: uuidv4(),
@@ -36,45 +37,44 @@ export class AlbumService {
   async updateAlbum(
     id: string,
     updateAlbumDto: UpdateAlbumDto,
-  ):
-  Promise<{
-    album: Album,
-    error: Error | undefined,
+  ): Promise<{
+    album: Album;
+    error: Error | undefined;
   }> {
     const getResult = await this.getAlbumById(id);
     if (getResult.error) {
       return {
         album: getResult.album,
         error: getResult.error,
-      }
+      };
     }
     const updatedAlbum = await this.db.album.update({
       where: { id },
-      data: { 
+      data: {
         ...getResult.album,
         ...updateAlbumDto,
       },
     });
     return {
       album: updatedAlbum,
-      error: undefined,      
+      error: undefined,
     };
   }
 
-  async deleteAlbum(id: string) : Promise<{
-    error: Error | undefined,
+  async deleteAlbum(id: string): Promise<{
+    error: Error | undefined;
   }> {
     const getResult = await this.getAlbumById(id);
     if (getResult.error) {
       return {
         error: getResult.error,
-      }
+      };
     }
     await this.db.album.delete({
       where: { id },
     });
     return {
       error: undefined,
-    }
+    };
   }
 }

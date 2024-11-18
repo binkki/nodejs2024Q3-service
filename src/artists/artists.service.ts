@@ -12,18 +12,19 @@ export class ArtistService {
     return await this.db.artist.findMany();
   }
 
-  async getArtistById(id: string): 
-  Promise<{
-    artist: Artist,
-    error: Error | undefined,
+  async getArtistById(id: string): Promise<{
+    artist: Artist;
+    error: Error | undefined;
   }> {
     const artist = await this.db.artist.findUnique({
       where: { id },
     });
     return {
       artist,
-      error: !artist ? new NotFoundException("Artist with this id doesn't found") : undefined,
-    }
+      error: !artist
+        ? new NotFoundException("Artist with this id doesn't found")
+        : undefined,
+    };
   }
 
   async addArtist(createArtistDto: CreateArtistDto) {
@@ -38,45 +39,44 @@ export class ArtistService {
   async updateArtist(
     id: string,
     updateArtistDto: UpdateArtistDto,
-  ): 
-  Promise<{
-    artist: Artist,
-    error: Error | undefined,
+  ): Promise<{
+    artist: Artist;
+    error: Error | undefined;
   }> {
     const getResult = await this.getArtistById(id);
     if (getResult.error) {
       return {
         artist: getResult.artist,
         error: getResult.error,
-      }
+      };
     }
     const updatedArtist = await this.db.artist.update({
       where: { id },
-      data: { 
+      data: {
         ...getResult.artist,
         ...updateArtistDto,
       },
     });
     return {
       artist: updatedArtist,
-      error: undefined,      
+      error: undefined,
     };
   }
 
-  async deleteArtist(id: string) : Promise<{
-    error: Error | undefined,
-  }>  {
+  async deleteArtist(id: string): Promise<{
+    error: Error | undefined;
+  }> {
     const getResult = await this.getArtistById(id);
     if (getResult.error) {
       return {
         error: getResult.error,
-      }
+      };
     }
     await this.db.artist.delete({
       where: { id },
     });
     return {
       error: undefined,
-    }
+    };
   }
 }

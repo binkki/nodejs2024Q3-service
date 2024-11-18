@@ -14,7 +14,11 @@ import { User } from 'src/types/types';
 import { UsersService } from './users.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { isValidPasswordDto, isValidUserDto, validateId } from 'src/utils/utils';
+import {
+  isValidPasswordDto,
+  isValidUserDto,
+  validateId,
+} from 'src/utils/utils';
 
 @Controller('user')
 export class UsersController {
@@ -34,7 +38,7 @@ export class UsersController {
     if (getResult.error) {
       throw getResult.error;
     }
-    delete getResult.user["password"];
+    delete getResult.user['password'];
     return getResult.user;
   }
 
@@ -58,7 +62,10 @@ export class UsersController {
     if (!isValidPasswordDto(updatePasswordDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    const updateResult = await this.usersService.updatePassword(id, updatePasswordDto);
+    const updateResult = await this.usersService.updatePassword(
+      id,
+      updatePasswordDto,
+    );
     if (updateResult.error) {
       throw updateResult.error;
     }

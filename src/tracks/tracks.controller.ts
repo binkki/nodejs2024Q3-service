@@ -53,7 +53,10 @@ export class TracksController {
     if (!isValidTrackDto(createTrackDto)) {
       throw new BadRequestException('Wrong dto');
     }
-    const updateResult = await this.tracksService.updateTrack(id, createTrackDto);
+    const updateResult = await this.tracksService.updateTrack(
+      id,
+      createTrackDto,
+    );
     if (updateResult.error) {
       throw updateResult.error;
     }
