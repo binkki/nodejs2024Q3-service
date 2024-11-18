@@ -19,7 +19,11 @@
     "test:refresh": "cross-env TEST_MODE=auth jest --testPathPattern refresh.e2e.spec.ts --noStackTrace --runInBand",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand"
+    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
+    "docker:start": "docker compose up --build -w",
+    "docker:scan:app": "docker scout cves nodejs2024q3-service-app:latest",
+    "docker:scan:db": "docker scout cves postgres:16.2-alpine"
+
   },
   "prisma": {
     "seed": "node --loader ts-node/esm ./prisma/seed.ts"
