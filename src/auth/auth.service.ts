@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
@@ -68,5 +68,29 @@ export class AuthService {
         login: user.login
     });
     return { accessToken };
+  }
+
+  async refresh(refreshToken: string): Promise<{
+    accessToken: string;
+    refreshToken: string;
+  }> {
+    if (!refreshToken) {
+      throw new UnauthorizedException('Refresh token not found');
+    }
+    try {
+      const payload = this.jwtService.verify(refreshToken, {
+        secret: process.env.JWT_SECRET_REFRESH_KEY,
+      });
+      const newPayload = { userId: payload.userId, login: payload.login };
+      return { 
+        accessToken: this.jwtService.sign(newPayload),
+        refreshToken: this.jwtService.sign(newPayload, {
+          secret: process.env.JWT_SECRET_REFRESH_KEY,
+          expiresIn: process.env.TOKEN_REFRESH_EXPIRE_TIME,
+        })
+      };
+    } catch {
+      throw new UnauthorizedException('Invalid refresh token');
+    }
   }
 }
