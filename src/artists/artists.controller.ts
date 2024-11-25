@@ -8,9 +8,11 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { ArtistService } from './artists.service';
 import { CreateArtistDto, UpdateArtistDto } from './dto/artist.dto';
+import { isValidArtistDto, validateId } from 'src/utils/utils';
 
 @Controller('artist')
 export class ArtistController {
@@ -25,13 +27,21 @@ export class ArtistController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getArtistById(@Param('id') id: string) {
-    return await this.artistService.getArtistById(id);
+    validateId(id);
+    const getResult = await this.artistService.getArtistById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    return getResult.artist;
   }
 
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async addArtist(@Body() createArtistDto: CreateArtistDto) {
-    return this.artistService.addArtist(createArtistDto);
+    if (!isValidArtistDto(createArtistDto, true)) {
+      throw new BadRequestException('Wrong dto');
+    }
+    return await this.artistService.addArtist(createArtistDto);
   }
 
   @Put(':id')
@@ -39,12 +49,27 @@ export class ArtistController {
     @Param('id') id: string,
     @Body() updateArtistDto: UpdateArtistDto,
   ) {
-    return await this.artistService.updateArtist(id, updateArtistDto);
+    validateId(id);
+    if (!isValidArtistDto(updateArtistDto, false)) {
+      throw new BadRequestException('Wrong dto');
+    }
+    const updateResult = await this.artistService.updateArtist(
+      id,
+      updateArtistDto,
+    );
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    return updateResult.artist;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteArtist(@Param('id') id: string) {
-    await this.artistService.deleteArtist(id);
+    validateId(id);
+    const deleteResult = await this.artistService.deleteArtist(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }

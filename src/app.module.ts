@@ -6,7 +6,7 @@ import { UsersModule } from './users/users.module';
 import { FavoritesModule } from './favorites/favorites.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { db } from './db';
+import { DatabaseService } from './database/database.service';
 
 @Module({
   imports: [
@@ -17,6 +17,6 @@ import { db } from './db';
     FavoritesModule,
   ],
   controllers: [AppController],
-  providers: [AppService, { provide: 'DB_CONNECTION', useValue: db }],
+  providers: [AppService, DatabaseService],
 })
 export class AppModule {}

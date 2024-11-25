@@ -8,12 +8,17 @@ import {
   Body,
   HttpCode,
   HttpStatus,
+  BadRequestException,
 } from '@nestjs/common';
 import { User } from 'src/types/types';
 import { UsersService } from './users.service';
 import { UpdatePasswordDto } from './dto/update-password.dto';
 import { CreateUserDto } from './dto/create-user.dto';
-import { getUserWithoutPassword } from 'src/utils/utils';
+import {
+  isValidPasswordDto,
+  isValidUserDto,
+  validateId,
+} from 'src/utils/utils';
 
 @Controller('user')
 export class UsersController {
@@ -28,8 +33,13 @@ export class UsersController {
   @Get(':id')
   @HttpCode(HttpStatus.OK)
   async getUserById(@Param('id') id: string): Promise<Omit<User, 'password'>> {
-    const user = await this.usersService.getUserById(id);
-    return getUserWithoutPassword(user);
+    validateId(id);
+    const getResult = await this.usersService.getUserById(id);
+    if (getResult.error) {
+      throw getResult.error;
+    }
+    delete getResult.user['password'];
+    return getResult.user;
   }
 
   @Post()
@@ -37,8 +47,10 @@ export class UsersController {
   async addUser(
     @Body() createUserDto: CreateUserDto,
   ): Promise<Omit<User, 'password'>> {
-    const user = await this.usersService.addUser(createUserDto);
-    return getUserWithoutPassword(user);
+    if (!isValidUserDto(createUserDto)) {
+      throw new BadRequestException('Wrong dto');
+    }
+    return await this.usersService.addUser(createUserDto);
   }
 
   @Put(':id')
@@ -46,13 +58,27 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updatePasswordDto: UpdatePasswordDto,
   ): Promise<Omit<User, 'password'>> {
-    const user = await this.usersService.updatePassword(id, updatePasswordDto);
-    return getUserWithoutPassword(user);
+    validateId(id);
+    if (!isValidPasswordDto(updatePasswordDto)) {
+      throw new BadRequestException('Wrong dto');
+    }
+    const updateResult = await this.usersService.updatePassword(
+      id,
+      updatePasswordDto,
+    );
+    if (updateResult.error) {
+      throw updateResult.error;
+    }
+    return updateResult.user;
   }
 
   @Delete(':id')
   @HttpCode(HttpStatus.NO_CONTENT)
   async deleteUser(@Param('id') id: string) {
-    await this.usersService.deleteUser(id);
+    validateId(id);
+    const deleteResult = await this.usersService.deleteUser(id);
+    if (deleteResult.error) {
+      throw deleteResult.error;
+    }
   }
 }
